@@ -1,1 +1,297 @@
-if(!self.define){let e,s={};const n=(n,i)=>(n=new URL(n+".js",i).href,s[n]||new Promise(s=>{if("document"in self){const e=document.createElement("script");e.src=n,e.onload=s,document.head.appendChild(e)}else e=n,importScripts(n),s()}).then(()=>{let e=s[n];if(!e)throw new Error(`Module ${n} didn’t register its module`);return e}));self.define=(i,r)=>{const o=e||("document"in self?document.currentScript.src:"")||location.href;if(s[o])return;let t={};const a=e=>n(e,o),l={module:{uri:o},exports:t,require:a};s[o]=Promise.all(i.map(e=>l[e]||a(e))).then(e=>(r(...e),t))}}define(["./workbox-3f626378"],function(e){"use strict";self.skipWaiting(),e.clientsClaim(),e.precacheAndRoute([{url:"vite.svg",revision:"8e3a10e157f75ada21ab742c022d5430"},{url:"registerSW.js",revision:"34dbac725542876d5dda3056fc26901f"},{url:"offline.html",revision:"3a1a2945e96d4a35766ad7465519b2da"},{url:"index.html",revision:"7fd1fa45451687819197417ba09f97f6"},{url:"icons/icon.svg",revision:"b557a903e1dafc52182bdec89f557d43"},{url:"assets/utils-vendor-DmWYg8YC.js",revision:null},{url:"assets/three-vendor-D5axMJkK.js",revision:null},{url:"assets/react-vendor-l0sNRNKZ.js",revision:null},{url:"assets/index-DI1smzF8.css",revision:null},{url:"assets/index-BofDdc_o.js",revision:null},{url:"assets/icons-vendor-JlM8X6rG.js",revision:null},{url:"assets/charts-vendor-DdHsXhgj.js",revision:null},{url:"icons/icon.svg",revision:"b557a903e1dafc52182bdec89f557d43"},{url:"manifest.webmanifest",revision:"00abdb4be887c7896c1e0ec73198afae"}],{}),e.cleanupOutdatedCaches(),e.registerRoute(new e.NavigationRoute(e.createHandlerBoundToURL("/Wehtrer/index.html"))),e.registerRoute(/^https:\/\/api\.openweathermap\.org\/.*/i,new e.NetworkFirst({cacheName:"weather-api-cache",plugins:[new e.ExpirationPlugin({maxEntries:50,maxAgeSeconds:600}),new e.CacheableResponsePlugin({statuses:[0,200]})]}),"GET"),e.registerRoute(/\.(?:png|jpg|jpeg|svg|gif|webp)$/,new e.CacheFirst({cacheName:"images-cache",plugins:[new e.ExpirationPlugin({maxEntries:100,maxAgeSeconds:2592e3})]}),"GET"),e.registerRoute(/\.(?:js|css|woff2?)$/,new e.StaleWhileRevalidate({cacheName:"static-resources",plugins:[new e.ExpirationPlugin({maxEntries:100,maxAgeSeconds:604800})]}),"GET")});
+// Modern Service Worker with Workbox-like caching strategies
+const CACHE_VERSION = 'v2.0.0';
+const CACHE_NAME = `weather-dashboard-${CACHE_VERSION}`;
+const STATIC_CACHE = `static-${CACHE_VERSION}`;
+const DYNAMIC_CACHE = `dynamic-${CACHE_VERSION}`;
+const IMAGE_CACHE = `images-${CACHE_VERSION}`;
+const API_CACHE = `api-${CACHE_VERSION}`;
+
+// Статические ресурсы для немедленного кэширования
+const STATIC_ASSETS = [
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/offline.html',
+];
+
+// Настройки кэширования
+const CACHE_LIMITS = {
+  dynamic: 50,
+  images: 30,
+  api: 20,
+};
+
+// Установка Service Worker
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(STATIC_CACHE)
+      .then((cache) => {
+        console.log('[SW] Pre-caching static assets');
+        return cache.addAll(STATIC_ASSETS);
+      })
+      .then(() => {
+        console.log('[SW] Installation complete, skipping waiting');
+        return self.skipWaiting();
+      })
+  );
+});
+
+// Активация и очистка старых кэшей
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys()
+      .then((cacheNames) => {
+        return Promise.all(
+          cacheNames
+            .filter((name) => {
+              return name.startsWith('weather-dashboard-') || 
+                     name.startsWith('static-') || 
+                     name.startsWith('dynamic-') ||
+                     name.startsWith('images-') ||
+                     name.startsWith('api-');
+            })
+            .filter((name) => {
+              return !name.includes(CACHE_VERSION);
+            })
+            .map((name) => {
+              console.log('[SW] Deleting old cache:', name);
+              return caches.delete(name);
+            })
+        );
+      })
+      .then(() => {
+        console.log('[SW] Activation complete, claiming clients');
+        return self.clients.claim();
+      })
+  );
+});
+
+// Стратегии кэширования
+const strategies = {
+  // Cache First для статических ресурсов
+  cacheFirst: async (request, cacheName = STATIC_CACHE) => {
+    const cached = await caches.match(request);
+    if (cached) return cached;
+    
+    const response = await fetch(request);
+    if (response.ok) {
+      const cache = await caches.open(cacheName);
+      cache.put(request, response.clone());
+    }
+    return response;
+  },
+
+  // Network First для API
+  networkFirst: async (request, cacheName = API_CACHE, maxAge = 5 * 60 * 1000) => {
+    try {
+      const response = await fetch(request);
+      if (response.ok) {
+        const cache = await caches.open(cacheName);
+        const responseClone = response.clone();
+        responseClone.headers.append('sw-cache-time', Date.now().toString());
+        cache.put(request, responseClone);
+      }
+      return response;
+    } catch (error) {
+      const cached = await caches.match(request);
+      if (cached) {
+        const cacheTime = cached.headers.get('sw-cache-time');
+        if (cacheTime && (Date.now() - parseInt(cacheTime)) < maxAge) {
+          return cached;
+        }
+      }
+      // Возвращаем устаревший кэш или fallback
+      return cached || caches.match('/offline.html');
+    }
+  },
+
+  // Stale While Revalidate для изображений
+  staleWhileRevalidate: async (request, cacheName = IMAGE_CACHE) => {
+    const cache = await caches.open(cacheName);
+    const cached = await cache.match(request);
+    
+    const fetchPromise = fetch(request).then((response) => {
+      if (response.ok) {
+        cache.put(request, response.clone());
+      }
+      return response;
+    }).catch(() => cached);
+
+    return cached || fetchPromise;
+  },
+};
+
+// Обработка fetch запросов
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  const url = new URL(request.url);
+
+  // Пропускаем не-GET запросы
+  if (request.method !== 'GET') return;
+
+  // Пропускаем chrome-extension и другие не-http запросы
+  if (!url.protocol.startsWith('http')) return;
+
+  // API запросы к OpenWeatherMap
+  if (url.hostname.includes('openweathermap.org')) {
+    event.respondWith(strategies.networkFirst(request, API_CACHE, 10 * 60 * 1000));
+    return;
+  }
+
+  // Изображения
+  if (request.destination === 'image') {
+    event.respondWith(strategies.staleWhileRevalidate(request, IMAGE_CACHE));
+    return;
+  }
+
+  // Статические ресурсы (CSS, JS, шрифты)
+  if (request.destination === 'style' || 
+      request.destination === 'script' ||
+      request.destination === 'font') {
+    event.respondWith(strategies.cacheFirst(request, STATIC_CACHE));
+    return;
+  }
+
+  // HTML страницы
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      strategies.networkFirst(request, STATIC_CACHE)
+        .catch(() => caches.match('/offline.html'))
+    );
+    return;
+  }
+
+  // Остальные запросы - Network First с fallback
+  event.respondWith(
+    strategies.networkFirst(request, DYNAMIC_CACHE)
+      .catch(() => caches.match(request))
+  );
+});
+
+// Фоновая синхронизация
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'sync-weather') {
+    event.waitUntil(syncWeatherData());
+  }
+  if (event.tag === 'sync-alerts') {
+    event.waitUntil(syncAlerts());
+  }
+});
+
+async function syncWeatherData() {
+  console.log('[SW] Syncing weather data...');
+  // Логика синхронизации при восстановлении соединения
+}
+
+async function syncAlerts() {
+  console.log('[SW] Syncing weather alerts...');
+  // Проверка погодных предупреждений
+}
+
+// Push уведомления
+self.addEventListener('push', (event) => {
+  const data = event.data?.json() || {};
+  const options = {
+    body: data.body || 'Обновление погоды',
+    icon: '/icons/icon-192x192.png',
+    badge: '/icons/icon-72x72.png',
+    vibrate: [100, 50, 100],
+    tag: data.tag || 'weather-update',
+    requireInteraction: true,
+    actions: [
+      { action: 'open', title: 'Открыть', icon: '/icons/action-open.png' },
+      { action: 'dismiss', title: 'Закрыть', icon: '/icons/action-dismiss.png' }
+    ],
+    data: {
+      url: data.url || '/',
+      timestamp: Date.now()
+    }
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'Метеостанция', options)
+  );
+});
+
+// Обработка кликов по уведомлениям
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  if (event.action === 'dismiss') {
+    return;
+  }
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then((windowClients) => {
+        // Если уже есть открытое окно - фокусируем его
+        for (let client of windowClients) {
+          if (client.url === event.notification.data.url && 'focus' in client) {
+            return client.focus();
+          }
+        }
+        // Иначе открываем новое
+        if (clients.openWindow) {
+          return clients.openWindow(event.notification.data.url);
+        }
+      })
+  );
+});
+
+// Обработка сообщений от клиента
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+  
+  if (event.data && event.data.type === 'GET_VERSION') {
+    event.ports[0].postMessage({ version: CACHE_VERSION });
+  }
+
+  if (event.data && event.data.type === 'CACHE_URLS') {
+    event.waitUntil(
+      caches.open(DYNAMIC_CACHE)
+        .then((cache) => cache.addAll(event.data.urls))
+    );
+  }
+
+  if (event.data && event.data.type === 'CLEAR_CACHE') {
+    event.waitUntil(
+      caches.keys().then((names) => {
+        return Promise.all(names.map((name) => caches.delete(name)));
+      })
+    );
+  }
+});
+
+// Периодическая фоновая синхронизация (Periodic Background Sync)
+self.addEventListener('periodicsync', (event) => {
+  if (event.tag === 'periodic-weather') {
+    event.waitUntil(checkWeatherAlerts());
+  }
+});
+
+async function checkWeatherAlerts() {
+  // Проверка погодных предупреждений в фоне
+  const apiKey = await getStoredApiKey();
+  if (!apiKey) return;
+
+  try {
+    // Логика проверки предупреждений
+    console.log('[SW] Checking weather alerts...');
+  } catch (error) {
+    console.error('[SW] Alert check failed:', error);
+  }
+}
+
+async function getStoredApiKey() {
+  // Получение API ключа из IndexedDB или localStorage
+  return null;
+}
+
+// Логирование для отладки
+self.addEventListener('error', (event) => {
+  console.error('[SW] Error:', event.message, event.filename, event.lineno);
+});
+
+console.log('[SW] Service Worker loaded');
