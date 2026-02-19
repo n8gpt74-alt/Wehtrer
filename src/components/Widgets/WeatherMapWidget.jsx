@@ -16,11 +16,11 @@ const FORECAST_MODELS = [
 ];
 
 const MAP_DESCRIPTIONS = {
-  rain: '💧 Осадки и радарная картина по выбранной модели.',
-  clouds: '☁️ Плотность и структура облачности.',
-  wind: '💨 Направление и скорость ветра.',
-  temp: '🌡️ Распределение температуры по региону.',
-  pressure: '🧭 Атмосферное давление и барические зоны.',
+  rain: 'Осадки и радарная картина по выбранной модели.',
+  clouds: 'Плотность и структура облачности.',
+  wind: 'Направление и скорость ветра.',
+  temp: 'Распределение температуры по региону.',
+  pressure: 'Атмосферное давление и барические зоны.',
 };
 const WeatherMapWidget = ({ location, coordinates }) => {
   const [mapLayer, setMapLayer] = useState('rain');
@@ -33,7 +33,7 @@ const WeatherMapWidget = ({ location, coordinates }) => {
   }, [lat, lon, mapLayer, forecastModel]);
 
   return (
-    <Card title="🗺️ Карта погоды" icon={Map} className="col-span-full">
+    <Card title="Карта погоды" icon={Map} className="col-span-full">
       <div className="flex flex-wrap gap-2 mb-3">
         {MAP_LAYERS.map((layer) => {
           const Icon = layer.icon;
@@ -101,7 +101,7 @@ const WeatherMapWidget = ({ location, coordinates }) => {
       </div>
 
       <div className="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-slate-500">
-        <span>📍 {location?.city || 'Координаты'}: {lat.toFixed(2)}, {lon.toFixed(2)}</span>
+        <span>{location?.city || 'Координаты'}: {lat.toFixed(2)}, {lon.toFixed(2)}</span>
         <a
           href={`https://www.windy.com/${lat},${lon}`}
           target="_blank"

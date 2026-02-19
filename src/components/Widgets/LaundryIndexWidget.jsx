@@ -132,7 +132,7 @@ const LaundryIndexWidget = ({ current }) => {
   };
 
   return (
-    <Card title="👕 Сушка белья" icon={Shirt}>
+    <Card title="Сушка белья" icon={Shirt}>
       <div className="space-y-4">
         {/* Основной показатель */}
         <div className="flex items-center justify-between">

@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Bell, Clock, X, Plus, Trash2 } from 'lucide-react';
 
-const WeatherAlarm = ({ isOpen, onClose, currentWeather, location }) => {
+const WeatherAlarm = ({ isOpen, onClose, currentWeather }) => {
   const [alarms, setAlarms] = useState([]);
   const [newTime, setNewTime] = useState('07:00');
   const [newMessage, setNewMessage] = useState('morning'); // morning, evening, custom
+  const modalRef = useRef(null);
+  const closeButtonRef = useRef(null);
 
   // Загрузка будильников
   useEffect(() => {
@@ -24,43 +26,81 @@ const WeatherAlarm = ({ isOpen, onClose, currentWeather, location }) => {
     const interval = setInterval(() => {
       const now = new Date();
       const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-      
-      alarms.forEach(alarm => {
-        if (alarm.enabled && alarm.time === currentTime && !alarm.triggeredToday) {
-          triggerAlarm(alarm);
-          // Пометить как сработавший сегодня
-          updateAlarmTriggered(alarm.id);
-        }
-      });
-      
-      // Сброс triggeredToday в полночь
+      setAlarms((prevAlarms) => {
+        const updatedAlarms = prevAlarms.map((alarm) => {
+          if (!alarm.enabled || alarm.time !== currentTime || alarm.triggeredToday) {
+            return alarm;
+          }
+
+          if (Notification.permission === 'granted') {
+            const messages = {
+              morning: `Доброе утро! Погода на сегодня: ${Math.round(currentWeather?.temperature || 0)}°C`,
+              evening: `Добрый вечер! Завтра ожидается: ${Math.round(currentWeather?.temperature || 0)}°C`,
+              custom: alarm.customMessage || 'Будильник погоды!',
+            };
+
+            new Notification('Метеостанция', {
+              body: messages[alarm.messageType] || messages.morning,
+              icon: '/icons/icon-192x192.png',
+              badge: '/icons/icon-72x72.png',
+              vibrate: [200, 100, 200],
+              tag: `alarm-${alarm.id}`,
+              requireInteraction: true,
+            });
+          }
+
+          return { ...alarm, triggeredToday: true };
+        });
       if (now.getHours() === 0 && now.getMinutes() === 0) {
-        resetTriggers();
-      }
-    }, 60000); // Проверка каждую минуту
+          return updatedAlarms.map((alarm) => ({ ...alarm, triggeredToday: false }));
+        }
 
-    return () => clearInterval(interval);
-  }, [alarms]);
-
-  // Срабатывание будильника
-  const triggerAlarm = (alarm) => {
-    if (Notification.permission === 'granted') {
-      const messages = {
-        morning: `☀️ Доброе утро! Погода на сегодня: ${Math.round(currentWeather?.temperature || 0)}°C`,
-        evening: `🌙 Добрый вечер! Завтра ожидается: ${Math.round(currentWeather?.temperature || 0)}°C`,
-        custom: alarm.customMessage || '⏰ Будильник погоды!',
-      };
-
-      new Notification('Метеостанция', {
-        body: messages[alarm.messageType] || messages.morning,
-        icon: '/icons/icon-192x192.png',
-        badge: '/icons/icon-72x72.png',
-        vibrate: [200, 100, 200],
-        tag: `alarm-${alarm.id}`,
-        requireInteraction: true,
+        return updatedAlarms;
       });
-    }
-  };
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [currentWeather]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+
+      if (e.key !== 'Tab' || !modalRef.current) return;
+
+      const focusableElements = modalRef.current.querySelectorAll(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+
+      if (!focusableElements.length) return;
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      if (e.shiftKey && document.activeElement === firstElement) {
+        e.preventDefault();
+        lastElement.focus();
+      } else if (!e.shiftKey && document.activeElement === lastElement) {
+        e.preventDefault();
+        firstElement.focus();
+      }
+    };
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', handleKeyDown);
+    closeButtonRef.current?.focus();
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen, onClose]);
+
+
 
   // Добавление будильника
   const addAlarm = () => {
@@ -89,17 +129,6 @@ const WeatherAlarm = ({ isOpen, onClose, currentWeather, location }) => {
     ));
   };
 
-  // Сброс триггеров
-  const resetTriggers = () => {
-    setAlarms(alarms.map(a => ({ ...a, triggeredToday: false })));
-  };
-
-  // Обновление триггера
-  const updateAlarmTriggered = (id) => {
-    setAlarms(alarms.map(a => 
-      a.id === id ? { ...a, triggeredToday: true } : a
-    ));
-  };
 
   if (!isOpen) return null;
 
@@ -107,8 +136,12 @@ const WeatherAlarm = ({ isOpen, onClose, currentWeather, location }) => {
     <div 
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="weather-alarm-title"
     >
-      <div 
+      <div
+        ref={modalRef}
         className="bg-slate-800 rounded-xl w-full max-w-md shadow-2xl border border-slate-700 animate-modal-open"
         onClick={(e) => e.stopPropagation()}
       >
@@ -116,11 +149,13 @@ const WeatherAlarm = ({ isOpen, onClose, currentWeather, location }) => {
         <div className="flex items-center justify-between p-4 border-b border-slate-700">
           <div className="flex items-center gap-2">
             <Bell className="w-5 h-5 text-blue-400" />
-            <h2 className="text-lg font-semibold text-slate-100">Будильник погоды</h2>
+            <h2 id="weather-alarm-title" className="text-lg font-semibold text-slate-100">Будильник погоды</h2>
           </div>
           <button
+            ref={closeButtonRef}
             onClick={onClose}
-            className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+            className="p-2 min-h-[44px] min-w-[44px] hover:bg-slate-700 rounded-lg transition-colors"
+            aria-label="Закрыть будильник погоды"
           >
             <X className="w-5 h-5 text-slate-400" />
           </button>
@@ -136,20 +171,26 @@ const WeatherAlarm = ({ isOpen, onClose, currentWeather, location }) => {
             </div>
             
             <div className="flex gap-2">
+              <label htmlFor="alarm-time" className="sr-only">Время будильника</label>
               <input
+                id="alarm-time"
+                aria-label="Время будильника"
                 type="time"
                 value={newTime}
                 onChange={(e) => setNewTime(e.target.value)}
-                className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 text-sm focus:outline-none focus:border-blue-500"
+                className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 text-sm focus:border-blue-500"
               />
+              <label htmlFor="alarm-type" className="sr-only">Тип уведомления</label>
               <select
+                id="alarm-type"
+                aria-label="Тип уведомления"
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 text-sm focus:outline-none focus:border-blue-500"
+                className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 text-sm focus:border-blue-500"
               >
-                <option value="morning">☀️ Утро</option>
-                <option value="evening">🌙 Вечер</option>
-                <option value="custom">⏰ Своё</option>
+                <option value="morning">Утро</option>
+                <option value="evening">Вечер</option>
+                <option value="custom">Своё сообщение</option>
               </select>
             </div>
             
@@ -193,9 +234,9 @@ const WeatherAlarm = ({ isOpen, onClose, currentWeather, location }) => {
                         {alarm.time}
                       </div>
                       <div className="text-xs text-slate-400">
-                        {alarm.messageType === 'morning' && '☀️ Утренний прогноз'}
-                        {alarm.messageType === 'evening' && '🌙 Вечерний прогноз'}
-                        {alarm.messageType === 'custom' && '⏰ Пользовательский'}
+                        {alarm.messageType === 'morning' && 'Утренний прогноз'}
+                        {alarm.messageType === 'evening' && 'Вечерний прогноз'}
+                        {alarm.messageType === 'custom' && 'Пользовательский прогноз'}
                       </div>
                     </div>
                   </div>
@@ -214,6 +255,7 @@ const WeatherAlarm = ({ isOpen, onClose, currentWeather, location }) => {
                     <button
                       onClick={() => deleteAlarm(alarm.id)}
                       className="p-2 text-slate-400 hover:text-red-400 transition-colors"
+                      aria-label={`Удалить будильник на ${alarm.time}`}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -233,8 +275,8 @@ const WeatherAlarm = ({ isOpen, onClose, currentWeather, location }) => {
 
           {/* Информация */}
           <div className="p-3 bg-slate-700/30 rounded-lg text-xs text-slate-400">
-            <p>💡 Будильник сработает только если разрешены уведомления</p>
-            <p className="mt-1">🔔 В полночь все будильники сбрасываются</p>
+            <p>Будильник сработает только если разрешены уведомления</p>
+            <p className="mt-1">В полночь все будильники сбрасываются</p>
           </div>
         </div>
       </div>

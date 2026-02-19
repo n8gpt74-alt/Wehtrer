@@ -110,7 +110,9 @@ const CitySearch = ({ onCitySelect }) => {
       {/* Поле поиска */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+        <label htmlFor="city-search-input" className="sr-only">Поиск города</label>
         <input
+          id="city-search-input"
           type="text"
           value={query}
           onChange={(e) => {
@@ -119,7 +121,7 @@ const CitySearch = ({ onCitySelect }) => {
           }}
           onFocus={() => setIsOpen(true)}
           placeholder="Поиск города..."
-          className="w-full pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          className="w-full pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
         />
         {query && (
           <button
@@ -127,7 +129,8 @@ const CitySearch = ({ onCitySelect }) => {
               setQuery('');
               setResults([]);
             }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300"
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 min-h-[44px] min-w-[44px] text-slate-400 hover:text-slate-300 rounded-lg transition-colors"
+            aria-label="Очистить поиск"
           >
             <X className="w-4 h-4" />
           </button>
@@ -148,28 +151,31 @@ const CitySearch = ({ onCitySelect }) => {
             {!query && favorites.length > 0 && (
               <div className="p-2">
                 <div className="text-xs text-slate-500 uppercase tracking-wider mb-2 px-2">
-                  ⭐ Избранные
+                  <Star className="w-3 h-3 inline mr-1 text-yellow-400" /> Избранные
                 </div>
                 {favorites.map((city) => (
-                  <button
+                  <div
                     key={`fav-${city.name}`}
-                    onClick={() => handleSelect(city)}
-                    className="w-full flex items-center justify-between p-2 hover:bg-slate-700 rounded-lg transition-colors"
+                    className="w-full flex items-center justify-between gap-2 p-2 hover:bg-slate-700 rounded-lg transition-colors"
                   >
-                    <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => handleSelect(city)}
+                      className="flex-1 min-w-0 flex items-center gap-3 text-left"
+                    >
                       <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                      <div className="text-left">
-                        <div className="text-sm font-medium text-slate-100">{city.name}</div>
-                        <div className="text-xs text-slate-400">{city.country}</div>
+                      <div className="text-left min-w-0">
+                        <div className="text-sm font-medium text-slate-100 truncate">{city.name}</div>
+                        <div className="text-xs text-slate-400 truncate">{city.country}</div>
                       </div>
-                    </div>
+                    </button>
                     <button
                       onClick={(e) => removeFavorite(city.name, e)}
-                      className="p-1 text-slate-400 hover:text-red-400"
+                      className="p-2 min-h-[44px] min-w-[44px] text-slate-400 hover:text-red-400 rounded-lg transition-colors"
+                      aria-label={`Удалить ${city.name} из избранного`}
                     >
                       <X className="w-4 h-4" />
                     </button>
-                  </button>
+                  </div>
                 ))}
               </div>
             )}
@@ -186,25 +192,28 @@ const CitySearch = ({ onCitySelect }) => {
                   Недавние
                 </div>
                 {recentSearches.map((city) => (
-                  <button
+                  <div
                     key={`recent-${city.name}`}
-                    onClick={() => handleSelect(city)}
-                    className="w-full flex items-center justify-between p-2 hover:bg-slate-700 rounded-lg transition-colors"
+                    className="w-full flex items-center justify-between gap-2 p-2 hover:bg-slate-700 rounded-lg transition-colors"
                   >
-                    <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => handleSelect(city)}
+                      className="flex-1 min-w-0 flex items-center gap-3 text-left"
+                    >
                       <Clock className="w-4 h-4 text-slate-400" />
-                      <div className="text-left">
-                        <div className="text-sm font-medium text-slate-100">{city.name}</div>
-                        <div className="text-xs text-slate-400">{city.country}</div>
+                      <div className="text-left min-w-0">
+                        <div className="text-sm font-medium text-slate-100 truncate">{city.name}</div>
+                        <div className="text-xs text-slate-400 truncate">{city.country}</div>
                       </div>
-                    </div>
+                    </button>
                     <button
                       onClick={(e) => removeRecent(city.name, e)}
-                      className="p-1 text-slate-400 hover:text-red-400"
+                      className="p-2 min-h-[44px] min-w-[44px] text-slate-400 hover:text-red-400 rounded-lg transition-colors"
+                      aria-label={`Удалить ${city.name} из недавних`}
                     >
                       <X className="w-4 h-4" />
                     </button>
-                  </button>
+                  </div>
                 ))}
               </div>
             )}
@@ -229,37 +238,40 @@ const CitySearch = ({ onCitySelect }) => {
             {query && !isLoading && results.length > 0 && (
               <div className="p-2">
                 <div className="text-xs text-slate-500 uppercase tracking-wider mb-2 px-2">
-                  📍 Результаты
+                  <MapPin className="w-3 h-3 inline mr-1 text-blue-400" /> Результаты
                 </div>
                 {results.map((city, index) => {
                   const isFavorite = favorites.some(f => f.name === city.name);
                   return (
-                    <button
+                    <div
                       key={`result-${city.name}-${index}`}
-                      onClick={() => handleSelect(city)}
-                      className="w-full flex items-center justify-between p-2 hover:bg-slate-700 rounded-lg transition-colors"
+                      className="w-full flex items-center justify-between gap-2 p-2 hover:bg-slate-700 rounded-lg transition-colors"
                     >
-                      <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => handleSelect(city)}
+                        className="flex-1 min-w-0 flex items-center gap-3 text-left"
+                      >
                         <MapPin className="w-4 h-4 text-blue-400" />
-                        <div className="text-left">
-                          <div className="text-sm font-medium text-slate-100">
+                        <div className="text-left min-w-0">
+                          <div className="text-sm font-medium text-slate-100 truncate">
                             {city.name}
                             {city.state && `, ${city.state}`}
                           </div>
-                          <div className="text-xs text-slate-400">{city.country}</div>
+                          <div className="text-xs text-slate-400 truncate">{city.country}</div>
                         </div>
-                      </div>
+                      </button>
                       <button
                         onClick={(e) => toggleFavorite(city, e)}
-                        className={`p-1 transition-colors ${
-                          isFavorite 
-                            ? 'text-yellow-400' 
+                        className={`p-2 min-h-[44px] min-w-[44px] rounded-lg transition-colors ${
+                          isFavorite
+                            ? 'text-yellow-400'
                             : 'text-slate-400 hover:text-yellow-400'
                         }`}
+                        aria-label={isFavorite ? `Удалить ${city.name} из избранного` : `Добавить ${city.name} в избранное`}
                       >
                         <Star className={`w-4 h-4 ${isFavorite ? 'fill-yellow-400' : ''}`} />
                       </button>
-                    </button>
+                    </div>
                   );
                 })}
               </div>

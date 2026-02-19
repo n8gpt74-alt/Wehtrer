@@ -55,6 +55,27 @@ const TemperatureChart = ({ data }) => {
 
   return (
     <Card title="Температура" icon={Thermometer} className="col-span-full lg:col-span-2 card-gradient-header" variant="gradient">
+      <div className="sr-only">
+        <table>
+          <caption>Почасовая температура и ощущаемая температура</caption>
+          <thead>
+            <tr>
+              <th>Время</th>
+              <th>Температура</th>
+              <th>Ощущается как</th>
+            </tr>
+          </thead>
+          <tbody>
+            {chartData.map((item) => (
+              <tr key={`temp-row-${item.time}`}>
+                <td>{item.time}</td>
+                <td>{item.temperature}°C</td>
+                <td>{item.feelsLike}°C</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData}>

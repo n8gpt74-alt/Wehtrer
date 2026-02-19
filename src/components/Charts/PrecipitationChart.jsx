@@ -55,6 +55,27 @@ const PrecipitationChart = ({ data }) => {
 
   return (
     <Card title="Осадки" icon={CloudRain} variant="glass" className="card-gradient-header">
+      <div className="sr-only">
+        <table>
+          <caption>Почасовые осадки и вероятность осадков</caption>
+          <thead>
+            <tr>
+              <th>Время</th>
+              <th>Осадки (мм)</th>
+              <th>Вероятность (%)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {chartData.map((item) => (
+              <tr key={`precipitation-row-${item.time}`}>
+                <td>{item.time}</td>
+                <td>{item.precipitation}</td>
+                <td>{item.probability}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <div className="h-48">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData}>

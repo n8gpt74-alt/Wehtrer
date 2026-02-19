@@ -19,7 +19,8 @@ import {
 /**
  * Stat Item Component - Enhanced with glassmorphism
  */
-const StatItem = ({ label, value, subValue, icon: IconComponent, delay = 0, color = 'blue' }) => {
+const StatItem = ({ label, value, subValue, icon, delay = 0, color = 'blue' }) => {
+  const IconComponent = icon;
   const colorClasses = {
     blue: 'from-blue-500/20 to-cyan-500/20 border-blue-400/30 text-blue-400',
     purple: 'from-purple-500/20 to-pink-500/20 border-purple-400/30 text-purple-400',

@@ -153,7 +153,7 @@ const WeatherAlerts = ({ alerts = [], current }) => {
   }
   
   return (
-    <Card title="⚠️ Предупреждения" icon={AlertTriangle} className="col-span-full">
+    <Card title="Предупреждения" icon={AlertTriangle} className="col-span-full">
       <div className="space-y-3">
         <AnimatePresence>
           {visibleAlerts.map((alert) => {
@@ -178,13 +178,13 @@ const WeatherAlerts = ({ alerts = [], current }) => {
                     </p>
                     {alert.expires && (
                       <p className="text-xs opacity-75 mt-2 font-mono">
-                        ⏰ {alert.expires}
+                        До: {alert.expires}
                       </p>
                     )}
                   </div>
                   <button
                     onClick={() => setDismissed([...dismissed, alert.id])}
-                    className="p-1 hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"
+                    className="p-2 min-h-[44px] min-w-[44px] hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"
                     aria-label="Закрыть предупреждение"
                   >
                     <X className="w-4 h-4" />

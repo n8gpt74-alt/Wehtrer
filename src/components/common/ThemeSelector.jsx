@@ -56,17 +56,8 @@ const ThemeSelector = () => {
   const [currentTheme, setCurrentTheme] = useState('ocean');
   const [isOpen, setIsOpen] = useState(false);
 
-  // Загрузка сохранённой темы
-  useEffect(() => {
-    const saved = localStorage.getItem('weather_theme');
-    if (saved && themes[saved]) {
-      setCurrentTheme(saved);
-      applyTheme(saved);
-    }
-  }, []);
-
   // Применение темы
-  const applyTheme = (themeName) => {
+  function applyTheme(themeName) {
     const theme = themes[themeName];
     const root = document.documentElement;
     
@@ -78,7 +69,16 @@ const ThemeSelector = () => {
     // Сохраняем
     localStorage.setItem('weather_theme', themeName);
     setCurrentTheme(themeName);
-  };
+  }
+
+  // Загрузка сохранённой темы
+  useEffect(() => {
+    const saved = localStorage.getItem('weather_theme');
+    if (saved && themes[saved]) {
+      setCurrentTheme(saved);
+      applyTheme(saved);
+    }
+  }, []);
 
   const handleSelect = (themeName) => {
     applyTheme(themeName);
@@ -92,6 +92,7 @@ const ThemeSelector = () => {
         onClick={() => setIsOpen(!isOpen)}
         className="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 transition-colors"
         title="Выбрать тему"
+        aria-label="Выбрать тему оформления"
       >
         <Palette className="w-5 h-5 text-slate-300" />
       </button>

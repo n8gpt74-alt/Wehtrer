@@ -1,13 +1,16 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { MotionConfig } from 'framer-motion'
 import './index.css'
 import App from './App.jsx'
 import { UnitsProvider } from './hooks/useUnits.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <UnitsProvider>
-      <App />
-    </UnitsProvider>
+    <MotionConfig reducedMotion="user">
+      <UnitsProvider>
+        <App />
+      </UnitsProvider>
+    </MotionConfig>
   </StrictMode>,
 )

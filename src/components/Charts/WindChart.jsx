@@ -50,6 +50,27 @@ const WindChart = ({ data }) => {
 
   return (
     <Card title="Ветер" icon={Wind} variant="glass" className="card-gradient-header">
+      <div className="sr-only">
+        <table>
+          <caption>Почасовая скорость и порывы ветра</caption>
+          <thead>
+            <tr>
+              <th>Время</th>
+              <th>Скорость ветра (м/с)</th>
+              <th>Порывы (м/с)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {chartData.map((item) => (
+              <tr key={`wind-row-${item.time}`}>
+                <td>{item.time}</td>
+                <td>{item.windSpeed}</td>
+                <td>{item.windGust}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <div className="h-48">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={chartData}>

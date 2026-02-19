@@ -71,7 +71,7 @@ const SunProgressWidget = ({ astronomy }) => {
   };
 
   return (
-    <Card title="☀️ Солнце" icon={Sun}>
+    <Card title="Солнце" icon={Sun}>
       <div className="space-y-4">
         {/* Визуализация пути солнца */}
         <div className="relative h-32 bg-gradient-to-b from-slate-700/50 to-slate-800/50 rounded-xl overflow-hidden">

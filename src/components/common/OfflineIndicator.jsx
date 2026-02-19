@@ -5,7 +5,7 @@ import { WifiOff, Database } from 'lucide-react';
 /**
  * Offline Service для управления кэшированием данных
  */
-export const offlineService = {
+const offlineService = {
   CACHE_NAME: 'weather-dashboard-v3',
   OFFLINE_DATA_KEY: 'weather-offline-data',
   

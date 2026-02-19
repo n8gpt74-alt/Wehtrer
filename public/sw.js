@@ -93,7 +93,7 @@ const strategies = {
         cache.put(request, response.clone());
       }
       return response;
-    } catch (error) {
+    } catch {
       const cached = await caches.match(request);
       if (cached) {
         return cached;
@@ -220,7 +220,7 @@ self.addEventListener('notificationclick', (event) => {
   }
 
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true })
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then((windowClients) => {
         // Если уже есть открытое окно - фокусируем его
         for (let client of windowClients) {
@@ -229,8 +229,8 @@ self.addEventListener('notificationclick', (event) => {
           }
         }
         // Иначе открываем новое
-        if (clients.openWindow) {
-          return clients.openWindow(event.notification.data.url);
+        if (self.clients.openWindow) {
+          return self.clients.openWindow(event.notification.data.url);
         }
       })
   );

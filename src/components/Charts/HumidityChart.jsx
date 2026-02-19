@@ -43,6 +43,25 @@ const HumidityChart = ({ data }) => {
 
   return (
     <Card title="Влажность" icon={Droplets} variant="glass" className="card-gradient-header">
+      <div className="sr-only">
+        <table>
+          <caption>Почасовая влажность воздуха</caption>
+          <thead>
+            <tr>
+              <th>Время</th>
+              <th>Влажность</th>
+            </tr>
+          </thead>
+          <tbody>
+            {chartData.map((item) => (
+              <tr key={`humidity-row-${item.time}`}>
+                <td>{item.time}</td>
+                <td>{item.humidity}%</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <div className="h-48">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData}>
@@ -94,7 +113,7 @@ const HumidityChart = ({ data }) => {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.5 }}
       >
-        💧 Оптимальная влажность: 40-60%
+        Оптимальная влажность: 40-60%
       </motion.div>
     </Card>
   );

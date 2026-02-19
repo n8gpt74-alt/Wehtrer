@@ -4,7 +4,7 @@ import Card from '../common/Card';
 const RunningIndexWidget = ({ current }) => {
   if (!current) return null;
 
-  const { temperature, feelsLike, humidity, windSpeed, uvIndex, condition } = current;
+  const { temperature, humidity, windSpeed, uvIndex, condition } = current;
 
   const calculateRunningIndex = () => {
     let score = 50;

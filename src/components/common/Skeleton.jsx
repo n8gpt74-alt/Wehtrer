@@ -22,7 +22,7 @@ export const SkeletonCard = ({ className = '', title = false }) => (
 /**
  * Skeleton для графиков
  */
-export const SkeletonChart = ({ className = '', title = 'График' }) => (
+export const SkeletonChart = ({ className = '', title: _title = 'График' }) => (
   <div className={`card-glass p-4 ${className}`}>
     <div className="flex items-center gap-2 mb-4">
       <div className="w-5 h-5 rounded-lg animate-skeleton bg-slate-700/50" />
@@ -75,7 +75,7 @@ export const SkeletonGlobe = () => (
 /**
  * Skeleton для виджета с иконкой
  */
-export const SkeletonWidget = ({ title = 'Виджет' }) => (
+export const SkeletonWidget = ({ title: _title = 'Виджет' }) => (
   <div className="card-glass p-4">
     <div className="flex items-center gap-2 mb-4">
       <div className="w-5 h-5 rounded-lg animate-skeleton bg-slate-700/50" />

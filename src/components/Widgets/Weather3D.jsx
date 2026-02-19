@@ -170,7 +170,7 @@ const Precipitation = ({ type, earthSize = 2.5 }) => {
     velocitiesRef.current = { positions, velocities };
   }
 
-  useFrame((state, delta) => {
+  useFrame((state, _delta) => {
     if (!particlesRef.current) return;
 
     const posAttr = particlesRef.current.geometry.attributes.position;
@@ -237,7 +237,7 @@ const Lightning = () => {
   const meshRef = useRef();
   const [visible, setVisible] = useState(false);
 
-  useFrame((state) => {
+  useFrame((_state) => {
     // Случайные вспышки молний
     if (Math.random() < 0.02) {
       setVisible(true);

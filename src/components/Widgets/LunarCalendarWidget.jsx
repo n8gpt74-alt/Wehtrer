@@ -7,7 +7,7 @@ const LunarCalendarWidget = ({ astronomy }) => {
 
   if (!astronomy) return null;
 
-  const { moonPhase, moonIllumination } = astronomy;
+  const { moonIllumination } = astronomy;
 
   const moonPhases = [
     { name: 'Новолуние', icon: '🌑', illumination: 0, influence: 'Период отдыха и восстановления. Хорошее время для планирования.' },
@@ -33,7 +33,7 @@ const LunarCalendarWidget = ({ astronomy }) => {
   const influence = getDayInfluence();
 
   return (
-    <Card title="🌙 Лунный календарь" icon={Moon}>
+    <Card title="Лунный календарь" icon={Moon}>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">

@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Settings, Key, MapPin, X, Check, AlertCircle } from 'lucide-react';
 
 const SettingsModal = ({ isOpen, onClose, onSave }) => {
   const [apiKey, setApiKey] = useState('');
   const [useGeolocation, setUseGeolocation] = useState(true);
   const [status, setStatus] = useState({ type: '', message: '' });
+  const modalRef = useRef(null);
+  const closeButtonRef = useRef(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -45,18 +47,41 @@ const SettingsModal = ({ isOpen, onClose, onSave }) => {
     }, 1000);
   };
 
-  // Закрытие по ESC
   useEffect(() => {
-    const handleEsc = (e) => {
-      if (e.key === 'Escape') onClose();
+    if (!isOpen) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+
+      if (e.key !== 'Tab' || !modalRef.current) return;
+
+      const focusableElements = modalRef.current.querySelectorAll(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+
+      if (!focusableElements.length) return;
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      if (e.shiftKey && document.activeElement === firstElement) {
+        e.preventDefault();
+        lastElement.focus();
+      } else if (!e.shiftKey && document.activeElement === lastElement) {
+        e.preventDefault();
+        firstElement.focus();
+      }
     };
-    if (isOpen) {
-      document.addEventListener('keydown', handleEsc);
-      document.body.style.overflow = 'hidden';
-    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', handleKeyDown);
+    closeButtonRef.current?.focus();
     return () => {
-      document.removeEventListener('keydown', handleEsc);
-      document.body.style.overflow = '';
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = previousOverflow;
     };
   }, [isOpen, onClose]);
 
@@ -71,6 +96,7 @@ const SettingsModal = ({ isOpen, onClose, onSave }) => {
       aria-labelledby="modal-title"
     >
       <div 
+        ref={modalRef}
         className="bg-slate-800 rounded-xl w-full max-w-md shadow-2xl border border-slate-700 animate-modal-open"
         onClick={(e) => e.stopPropagation()}
       >
@@ -83,8 +109,9 @@ const SettingsModal = ({ isOpen, onClose, onSave }) => {
             </h2>
           </div>
           <button
+            ref={closeButtonRef}
             onClick={onClose}
-            className="p-2 hover:bg-slate-700 rounded-lg transition-colors -mr-2"
+            className="p-2 min-h-[44px] min-w-[44px] hover:bg-slate-700 rounded-lg transition-colors -mr-2"
             aria-label="Закрыть"
           >
             <X className="w-5 h-5 text-slate-400" />
@@ -95,16 +122,17 @@ const SettingsModal = ({ isOpen, onClose, onSave }) => {
         <div className="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
           {/* API Key */}
           <div>
-            <label className="flex items-center gap-2 text-sm text-slate-300 mb-2">
+            <label htmlFor="owm-api-key" className="flex items-center gap-2 text-sm text-slate-300 mb-2">
               <Key className="w-4 h-4" />
               API ключ OpenWeatherMap
             </label>
             <input
+              id="owm-api-key"
               type="text"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               placeholder="Введите ваш API ключ..."
-              className="w-full px-3 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm"
+              className="w-full px-3 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm"
             />
             <p className="text-xs text-slate-500 mt-2 leading-relaxed">
               Получите бесплатный ключ на{' '}
@@ -121,33 +149,28 @@ const SettingsModal = ({ isOpen, onClose, onSave }) => {
 
           {/* Geolocation Toggle */}
           <div className="bg-slate-700/30 rounded-lg p-3">
-            <label className="flex items-center justify-between cursor-pointer">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-slate-400" />
                 <span className="text-sm text-slate-300">Геолокация</span>
               </div>
-              <div
+              <button
+                type="button"
                 className={`relative w-12 h-6 rounded-full transition-colors ${
                   useGeolocation ? 'bg-blue-500' : 'bg-slate-600'
                 }`}
                 onClick={() => setUseGeolocation(!useGeolocation)}
                 role="switch"
                 aria-checked={useGeolocation}
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    setUseGeolocation(!useGeolocation);
-                  }
-                }}
+                aria-label="Переключить геолокацию"
               >
                 <div
                   className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
                     useGeolocation ? 'left-7' : 'left-1'
                   }`}
                 />
-              </div>
-            </label>
+              </button>
+            </div>
             <p className="text-xs text-slate-500 mt-2">
               Автоматически определять местоположение
             </p>

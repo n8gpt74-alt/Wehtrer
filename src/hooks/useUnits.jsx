@@ -1,4 +1,5 @@
 import { useState, useEffect, createContext, useContext } from 'react';
+/* eslint-disable react-refresh/only-export-components */
 
 // Контекст для единиц измерения
 const UnitsContext = createContext(null);

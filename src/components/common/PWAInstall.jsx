@@ -164,7 +164,7 @@ const PWAInstall = () => {
               </div>
               <button
                 onClick={dismissPrompt}
-                className="p-1 text-slate-400 hover:text-slate-300 flex-shrink-0"
+                className="p-2 min-h-[44px] min-w-[44px] text-slate-400 hover:text-slate-300 flex-shrink-0 rounded-lg transition-colors"
                 aria-label="Закрыть"
               >
                 <X className="w-4 h-4" />
@@ -178,7 +178,7 @@ const PWAInstall = () => {
       <div className="fixed bottom-20 right-4 z-40 md:bottom-4">
         {notificationSupported && (
           <button
-            onClick={requestNotificationPermission}
+            onClick={notificationPermission === 'granted' ? sendTestNotification : requestNotificationPermission}
             className={`p-3 rounded-full border shadow-lg transition-all active:scale-95 ${
               notificationPermission === 'granted'
                 ? 'bg-slate-800 border-slate-700 hover:bg-slate-700'

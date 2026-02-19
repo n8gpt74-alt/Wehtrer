@@ -30,7 +30,7 @@ const MoonPhaseWidget = ({ astronomy }) => {
   const illuminationPercent = moonIllumination || 0;
 
   return (
-    <Card title="🌙 Луна" icon={Moon}>
+    <Card title="Луна" icon={Moon}>
       <div className="space-y-4">
         {/* Визуализация луны */}
         <div className="flex items-center justify-center gap-6">

@@ -42,13 +42,11 @@ import RunningIndexWidget from '../Widgets/RunningIndexWidget';
 import LunarCalendarWidget from '../Widgets/LunarCalendarWidget';
 import TidesWidget from '../Widgets/TidesWidget';
 import GardeningCalendarWidget from '../Widgets/GardeningCalendarWidget';
-import useFavorites from '../../hooks/useFavorites';
 import useGeolocation from '../../hooks/useGeolocation';
 
 const Dashboard = ({ isDark, toggleTheme }) => {
   const { data, loading, error, refresh, location, hasApiKey } = useWeather();
-  const { location: geoLocation, loading: geoLoading, error: geoError, refetch: refetchGeo } = useGeolocation();
-  const { favorites, addFavorite, removeFavorite, isFavorite } = useFavorites();
+  const { loading: geoLoading, refetch: refetchGeo } = useGeolocation();
   const [showSettings, setShowSettings] = useState(false);
   const [showAlarm, setShowAlarm] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
