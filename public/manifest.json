@@ -1,0 +1,39 @@
+{
+  "name": "Метеостанция — Прогноз погоды",
+  "short_name": "Погода",
+  "description": "Профессиональный мониторинг погоды с аналитикой и прогнозами",
+  "lang": "ru",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#3b82f6",
+  "start_url": "./",
+  "scope": "./",
+  "icons": [
+    {
+      "src": "./icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Сейчас",
+      "short_name": "Сейчас",
+      "description": "Текущая погода",
+      "url": "./?view=current"
+    },
+    {
+      "name": "Прогноз",
+      "short_name": "Прогноз",
+      "description": "Прогноз на неделю",
+      "url": "./?view=forecast"
+    },
+    {
+      "name": "Карта",
+      "short_name": "Карта",
+      "description": "Карта осадков",
+      "url": "./?view=map"
+    }
+  ]
+}

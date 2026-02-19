@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#3b82f6">
+  <title>Нет соединения | Метеостанция</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #e2e8f0;
+    }
+    
+    .container {
+      text-align: center;
+      padding: 2rem;
+      max-width: 400px;
+    }
+    
+    .icon {
+      font-size: 80px;
+      margin-bottom: 1rem;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(0.95); }
+    }
+    
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+      color: #f1f5f9;
+    }
+    
+    p {
+      color: #94a3b8;
+      margin-bottom: 1.5rem;
+      line-height: 1.6;
+    }
+    
+    .cached-data {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 1rem;
+      margin-top: 1.5rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .cached-data h2 {
+      font-size: 0.875rem;
+      color: #64748b;
+      margin-bottom: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .cached-weather {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+    }
+    
+    .cached-temp {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: #f1f5f9;
+    }
+    
+    .cached-location {
+      color: #94a3b8;
+      font-size: 0.875rem;
+    }
+    
+    button {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      border: none;
+      padding: 0.875rem 2rem;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 1rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+    
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 20px;
+      font-size: 0.875rem;
+      color: #f87171;
+      margin-bottom: 1rem;
+    }
+    
+    .status.online {
+      background: rgba(34, 197, 94, 0.1);
+      border-color: rgba(34, 197, 94, 0.3);
+      color: #4ade80;
+    }
+    
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid currentColor;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">📡</div>
+    
+    <div id="status" class="status">
+      <div class="spinner"></div>
+      <span>Проверка соединения...</span>
+    </div>
+    
+    <h1>Нет соединения</h1>
+    <p>Похоже, у вас нет подключения к интернету. Не волнуйтесь, вы всё ещё можете видеть последние сохранённые данные.</p>
+    
+    <button onclick="retryConnection()">
+      <span>🔄</span>
+      Повторить
+    </button>
+    
+    <div class="cached-data" id="cachedData" style="display: none;">
+      <h2>📍 Последние данные</h2>
+      <div class="cached-weather">
+        <span class="cached-temp" id="cachedTemp">--°C</span>
+        <div>
+          <div style="font-size: 24px;" id="cachedIcon">🌤️</div>
+          <div class="cached-location" id="cachedLocation">--</div>
+        </div>
+      </div>
+      <p style="font-size: 0.75rem; margin-top: 0.75rem; color: #64748b;">
+        Обновлено: <span id="cachedTime">--:--</span>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    const OFFLINE_PAGE = '/offline.html';
+    const basePath = window.location.pathname.endsWith(OFFLINE_PAGE)
+      ? window.location.pathname.slice(0, -OFFLINE_PAGE.length) || '/'
+      : '/';
+    const BASE_PATH = basePath.endsWith('/') ? basePath : `${basePath}/`;
+    const toBaseUrl = (path = '') => `${BASE_PATH}${path.replace(/^\//, '')}`;
+    // Проверка статуса соединения
+    function updateStatus() {
+      const statusEl = document.getElementById('status');
+      const isOnline = navigator.onLine;
+      
+      statusEl.className = 'status' + (isOnline ? ' online' : '');
+      statusEl.innerHTML = isOnline 
+        ? '<span>✓ Онлайн</span>' 
+        : '<div class="spinner"></div><span>Оффлайн...</span>';
+      
+      if (isOnline) {
+        setTimeout(() => {
+          window.location.href = BASE_PATH;
+        }, 1000);
+      }
+    }
+
+    // Попытка подключения
+    function retryConnection() {
+      updateStatus();
+    }
+
+    // Загрузка кэшированных данных
+    async function loadCachedData() {
+      try {
+        const cache = await caches.open('api-v2.0.0');
+        const requests = await cache.keys();
+        
+        // Ищем последний успешный ответ API
+        for (const request of requests) {
+          if (request.url.includes('openweathermap')) {
+            const response = await cache.match(request);
+            if (response) {
+              const data = await response.json();
+              displayCachedData(data);
+              break;
+            }
+          }
+        }
+      } catch (error) {
+        console.log('No cached data available');
+      }
+    }
+
+    function displayCachedData(data) {
+      if (!data || !data.main) return;
+      
+      const cachedData = document.getElementById('cachedData');
+      const cachedTemp = document.getElementById('cachedTemp');
+      const cachedIcon = document.getElementById('cachedIcon');
+      const cachedLocation = document.getElementById('cachedLocation');
+      const cachedTime = document.getElementById('cachedTime');
+      
+      cachedTemp.textContent = `${Math.round(data.main.temp)}°C`;
+      cachedLocation.textContent = `${data.name}, ${data.sys.country}`;
+      
+      const weatherIcons = {
+        '01d': '☀️', '01n': '🌙',
+        '02d': '⛅', '02n': '☁️',
+        '03d': '☁️', '03n': '☁️',
+        '04d': '☁️', '04n': '☁️',
+        '09d': '🌧️', '09n': '🌧️',
+        '10d': '🌦️', '10n': '🌧️',
+        '11d': '⛈️', '11n': '⛈️',
+        '13d': '❄️', '13n': '❄️',
+        '50d': '🌫️', '50n': '🌫️'
+      };
+      
+      cachedIcon.textContent = weatherIcons[data.weather[0]?.icon] || '🌤️';
+      cachedTime.textContent = new Date().toLocaleTimeString('ru-RU', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+      
+      cachedData.style.display = 'block';
+    }
+
+    // Слушатели событий
+    window.addEventListener('online', updateStatus);
+    window.addEventListener('offline', updateStatus);
+    
+    // Инициализация
+    updateStatus();
+    loadCachedData();
+
+    // Регистрация Service Worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register(toBaseUrl('sw.js'))
+        .then((reg) => console.log('SW registered:', reg.scope))
+        .catch((err) => console.log('SW registration failed:', err));
+    }
+  </script>
+</body>
+</html>
