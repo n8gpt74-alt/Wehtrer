@@ -4,8 +4,8 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const githubBase = env.VITE_GITHUB_BASE || '/Pogoda/'
-  const isNetlifyBuild = mode === 'netlify' || env.VITE_DEPLOY_TARGET === 'netlify'
-  const base = isNetlifyBuild ? '/' : githubBase
+  const isSecondaryBuild = ['secondary', 'netlify'].includes(mode) || ['secondary', 'netlify', 'cloudflare'].includes(env.VITE_DEPLOY_TARGET)
+  const base = isSecondaryBuild ? '/' : githubBase
 
   return {
     base,
