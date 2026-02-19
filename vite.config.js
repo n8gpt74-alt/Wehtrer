@@ -3,7 +3,9 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const base = mode === 'github' || env.VITE_DEPLOY_TARGET === 'github' ? '/Wehtrer/' : '/'
+  const githubBase = env.VITE_GITHUB_BASE || '/Pogoda/'
+  const isNetlifyBuild = mode === 'netlify' || env.VITE_DEPLOY_TARGET === 'netlify'
+  const base = isNetlifyBuild ? '/' : githubBase
 
   return {
     base,
