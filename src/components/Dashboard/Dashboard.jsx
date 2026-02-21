@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RefreshCw, Sun, Moon, Settings, MapPin, Navigation, Bell, AlertTriangle } from 'lucide-react';
+import { RefreshCw, Sun, Moon, Settings, MapPin, Navigation, Bell } from 'lucide-react';
 import useWeather from '../../hooks/useWeather';
 import { FullPageLoader } from '../common/Loader';
 import SettingsModal from '../common/SettingsModal';
@@ -154,19 +154,19 @@ const Dashboard = ({ isDark, toggleTheme }) => {
       {/* Particle Background */}
       <ParticleBackground weatherType={data?.current?.condition?.animation || 'clear'} />
 
-      <div className="min-h-screen p-4 md:p-6 lg:p-8 relative z-10">
-        <main id="main-content" tabIndex="-1" className="max-w-[1800px] mx-auto">
+      <div className="relative z-10 min-h-screen p-4 md:p-6 lg:p-8">
+        <main id="main-content" tabIndex="-1" className="mx-auto max-w-[1680px]">
           {/* Header - Mobile optimized */}
           <motion.header
-            className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-6 lg:mb-8 gap-4 safe-top"
+            className="safe-top mb-6 flex flex-col items-start justify-between gap-4 lg:mb-8 lg:flex-row lg:items-center"
             initial={{ opacity: 0, y: -24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: 'easeOut' }}
           >
             {/* Logo and Location */}
-            <div className="flex items-center gap-4 w-full lg:w-auto">
+            <div className="flex w-full items-center gap-4 lg:w-auto">
               <motion.div
-                className="w-14 h-14 sm:w-16 sm:h-16 flex-shrink-0 flex items-center justify-center bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-2xl ring-2 ring-white/10 shadow-lg shadow-blue-500/20"
+                className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl border border-blue-300/15 bg-gradient-to-br from-blue-500/15 to-purple-500/15 shadow-lg shadow-blue-900/30 sm:h-16 sm:w-16"
                 whileHover={{ scale: 1.05, rotate: 5 }}
                 transition={{ type: 'spring', stiffness: 400 }}
               >
@@ -177,7 +177,7 @@ const Dashboard = ({ isDark, toggleTheme }) => {
               </motion.div>
               <div className="min-w-0 flex-1">
                 <motion.h1
-                  className="text-2xl sm:text-3xl font-bold text-slate-100 tracking-tight"
+                  className="bg-gradient-to-r from-slate-100 via-blue-100 to-slate-200 bg-clip-text text-2xl font-semibold tracking-tight text-transparent sm:text-3xl lg:text-4xl"
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.1 }}
@@ -185,7 +185,7 @@ const Dashboard = ({ isDark, toggleTheme }) => {
                   Метеостанция
                 </motion.h1>
                 <motion.div
-                  className="flex items-center gap-2 text-sm text-slate-400 mt-1"
+                  className="mt-1.5 flex items-center gap-2 text-sm text-slate-300/90"
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.15 }}
@@ -193,7 +193,7 @@ const Dashboard = ({ isDark, toggleTheme }) => {
                   <MapPin className="w-4 h-4 flex-shrink-0" />
                   <span className="truncate">{location?.city}, {location?.country}</span>
                   {!hasApiKey && (
-                    <span className="text-xs px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded-full font-medium border border-amber-500/30">
+                    <span className="rounded-full border border-amber-400/35 bg-amber-500/20 px-2 py-0.5 text-xs font-medium text-amber-300">
                       Demo
                     </span>
                   )}
@@ -203,7 +203,7 @@ const Dashboard = ({ isDark, toggleTheme }) => {
 
             {/* Controls */}
             <motion.div
-              className="flex items-center gap-2 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0 scrollbar-thin"
+              className="dashboard-toolbar scrollbar-thin flex w-full items-center gap-2 overflow-x-auto rounded-2xl border border-slate-600/20 bg-slate-900/25 p-2 lg:w-auto lg:pb-2"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
@@ -301,7 +301,7 @@ const Dashboard = ({ isDark, toggleTheme }) => {
 
           {/* Main Grid - Responsive */}
           <motion.div
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+            className="dashboard-grid grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
             variants={containerVariants}
             initial="hidden"
             animate="visible"

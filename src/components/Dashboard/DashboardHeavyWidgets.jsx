@@ -1,8 +1,8 @@
 import { Component, Suspense, lazy } from 'react';
 import { AlertTriangle, CloudRain, Droplets, Globe, Thermometer, Wind } from 'lucide-react';
-import Card from '../common/Card';
 import LazyWidgetGate from '../common/LazyWidgetGate';
 import WidgetSkeletonCard from '../common/WidgetSkeletonCard';
+import WidgetStateCard from '../common/WidgetStateCard';
 
 const SafeWeather3D = lazy(() => import('../Widgets/SafeWeather3D'));
 const TemperatureChart = lazy(() => import('../Charts/TemperatureChart'));
@@ -31,18 +31,17 @@ class HeavyWidgetErrorBoundary extends Component {
   render() {
     if (this.state.hasError) {
       return (
-        <Card title={this.props.title} icon={this.props.icon} className={this.props.className} hover={false}>
-          <div className="space-y-3 py-8 text-center text-slate-400">
-            <AlertTriangle className="mx-auto h-7 w-7 text-amber-400" />
-            <p>Не удалось загрузить расширенный виджет.</p>
-            <button
-              onClick={this.handleRetry}
-              className="rounded-lg border border-slate-600/60 bg-slate-700/60 px-3 py-1.5 text-xs text-slate-200 transition-colors hover:bg-slate-600/70"
-            >
-              Повторить
-            </button>
-          </div>
-        </Card>
+        <WidgetStateCard
+          title={this.props.title}
+          icon={this.props.icon}
+          stateIcon={AlertTriangle}
+          message="Не удалось загрузить расширенный виджет."
+          description="Основная панель погоды продолжает работать."
+          action={this.handleRetry}
+          actionLabel="Повторить"
+          tone="warning"
+          className={this.props.className}
+        />
       );
     }
 

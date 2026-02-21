@@ -1,6 +1,7 @@
 import { Component, Suspense, lazy, useMemo } from 'react';
 import { AlertTriangle, Globe } from 'lucide-react';
-import Card from '../common/Card';
+import WidgetSkeletonCard from '../common/WidgetSkeletonCard';
+import WidgetStateCard from '../common/WidgetStateCard';
 
 const Weather3D = lazy(() => import('./Weather3D'));
 
@@ -21,13 +22,14 @@ class Weather3DErrorBoundary extends Component {
   render() {
     if (this.state.hasError) {
       return (
-        <Card title="3D Визуализация" icon={Globe}>
-          <div className="py-10 text-center text-slate-400 space-y-2">
-            <AlertTriangle className="w-8 h-8 mx-auto text-amber-400" />
-            <p>3D-виджет временно недоступен на этом устройстве.</p>
-            <p className="text-xs text-slate-500">Основная панель погоды продолжает работать.</p>
-          </div>
-        </Card>
+        <WidgetStateCard
+          title="3D Визуализация"
+          icon={Globe}
+          stateIcon={AlertTriangle}
+          message="3D-виджет временно недоступен на этом устройстве."
+          description="Основная панель погоды продолжает работать."
+          tone="warning"
+        />
       );
     }
 
@@ -52,23 +54,21 @@ const SafeWeather3D = ({ condition }) => {
 
   if (!webglSupported) {
     return (
-      <Card title="3D Визуализация" icon={Globe}>
-        <div className="py-10 text-center text-slate-400 space-y-2">
-          <AlertTriangle className="w-8 h-8 mx-auto text-amber-400" />
-          <p>WebGL не поддерживается в текущем браузере/устройстве.</p>
-        </div>
-      </Card>
+      <WidgetStateCard
+        title="3D Визуализация"
+        icon={Globe}
+        stateIcon={AlertTriangle}
+        message="WebGL не поддерживается в текущем браузере или устройстве."
+        description="Переключитесь на современный браузер или устройство с поддержкой WebGL."
+        tone="warning"
+      />
     );
   }
 
   return (
     <Weather3DErrorBoundary>
       <Suspense
-        fallback={
-          <Card title="3D Визуализация" icon={Globe}>
-            <div className="py-10 text-center text-slate-400">Загрузка 3D сцены...</div>
-          </Card>
-        }
+        fallback={<WidgetSkeletonCard title="3D Визуализация" icon={Globe} heightClass="h-80 sm:h-96" />}
       >
         <Weather3D condition={condition} />
       </Suspense>
