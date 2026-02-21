@@ -307,7 +307,7 @@ const Dashboard = ({ isDark, toggleTheme }) => {
             animate="visible"
           >
             {/* Weather Alerts - показываем только если есть предупреждения */}
-            <WeatherAlerts alerts={[]} current={data?.current} />
+            <WeatherAlerts alerts={data?.alerts || []} current={data?.current} />
 
             {/* Row 1: Current Weather (full width on mobile, 2 cols on lg) */}
             <CurrentWeather data={data?.current} location={location} />
@@ -417,7 +417,7 @@ const Dashboard = ({ isDark, toggleTheme }) => {
         location={location}
       />
 
-      <PWAInstall />
+      <PWAInstall currentWeather={data?.current} weatherAlerts={data?.alerts || []} />
     </>
   );
 };

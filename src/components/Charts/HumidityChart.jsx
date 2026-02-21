@@ -1,37 +1,7 @@
 import { Droplets } from 'lucide-react';
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  ReferenceLine,
-} from 'recharts';
 import Card from '../common/Card';
-import { motion } from 'framer-motion';
 
-const CustomTooltip = ({ active, payload, label }) => {
-  if (active && payload && payload.length) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="bg-slate-800/95 backdrop-blur-xl border border-slate-600/50 rounded-xl p-3 shadow-2xl"
-      >
-        <p className="text-slate-300 text-sm font-medium mb-2">{label}</p>
-        <div className="flex items-center gap-2">
-          <Droplets className="w-4 h-4 text-cyan-400" />
-          <p className="text-sm font-semibold text-cyan-400">
-            {payload[0].value}%
-          </p>
-        </div>
-      </motion.div>
-    );
-  }
-  return null;
-};
+const chartSize = { width: 100, height: 56, paddingX: 4, paddingY: 6 };
 
 const HumidityChart = ({ data }) => {
   if (!data || data.length === 0) return null;
@@ -40,6 +10,13 @@ const HumidityChart = ({ data }) => {
     time: item.hour,
     humidity: item.humidity,
   }));
+
+  const getX = (index) => chartSize.paddingX + (index / Math.max(chartData.length - 1, 1)) * (chartSize.width - chartSize.paddingX * 2);
+  const getY = (value) => chartSize.height - chartSize.paddingY - (value / 100) * (chartSize.height - chartSize.paddingY * 2);
+
+  const points = chartData.map((item, index) => `${getX(index)},${getY(item.humidity)}`).join(' ');
+  const area = `${points} ${getX(chartData.length - 1)},${chartSize.height - chartSize.paddingY} ${getX(0)},${chartSize.height - chartSize.paddingY}`;
+  const avgHumidity = Math.round(chartData.reduce((sum, item) => sum + item.humidity, 0) / chartData.length);
 
   return (
     <Card title="Влажность" icon={Droplets} variant="glass" className="card-gradient-header">
@@ -62,59 +39,31 @@ const HumidityChart = ({ data }) => {
           </tbody>
         </table>
       </div>
-      <div className="h-48">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData}>
-            <defs>
-              <linearGradient id="humidityGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.5} />
-                <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.5} />
-            <XAxis
-              dataKey="time"
-              stroke="#64748b"
-              tick={{ fill: '#94a3b8', fontSize: 10 }}
-              tickLine={{ stroke: '#475569' }}
-              axisLine={{ stroke: '#334155' }}
-            />
-            <YAxis
-              stroke="#64748b"
-              tick={{ fill: '#94a3b8', fontSize: 10 }}
-              tickLine={{ stroke: '#475569' }}
-              axisLine={{ stroke: '#334155' }}
-              domain={[0, 100]}
-              tickFormatter={(value) => `${value}%`}
-              width={30}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <ReferenceLine
-              y={60}
-              stroke="#22c55e"
-              strokeDasharray="5 5"
-              label={{ value: 'Комфорт', fill: '#22c55e', fontSize: 10 }}
-            />
-            <Area
-              type="monotone"
-              dataKey="humidity"
-              stroke="#06b6d4"
-              strokeWidth={3}
-              fill="url(#humidityGradient)"
-              animationDuration={1500}
-              activeDot={{ r: 6, strokeWidth: 2, stroke: '#fff' }}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+
+      <div className="h-48 rounded-xl border border-slate-600/25 bg-slate-900/25 p-3">
+        <svg viewBox={`0 0 ${chartSize.width} ${chartSize.height}`} className="h-full w-full" preserveAspectRatio="none" role="img" aria-label="График влажности">
+          {[0, 25, 50, 75, 100].map((tick) => {
+            const y = getY(tick);
+            return <line key={`tick-${tick}`} x1={chartSize.paddingX} x2={chartSize.width - chartSize.paddingX} y1={y} y2={y} stroke="rgba(148, 163, 184, 0.15)" strokeDasharray="1.5 1.5" />;
+          })}
+
+          <line
+            x1={chartSize.paddingX}
+            x2={chartSize.width - chartSize.paddingX}
+            y1={getY(60)}
+            y2={getY(60)}
+            stroke="rgba(34, 197, 94, 0.5)"
+            strokeDasharray="1.2 1.2"
+          />
+
+          <polygon points={area} fill="rgba(6, 182, 212, 0.22)" />
+          <polyline points={points} fill="none" stroke="#22d3ee" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
       </div>
-      <motion.div
-        className="mt-2 text-xs text-slate-500 text-center"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-      >
-        Оптимальная влажность: 40-60%
-      </motion.div>
+
+      <div className="mt-2 text-center text-xs text-slate-400">
+        Средняя влажность: <span className="font-semibold text-slate-200">{avgHumidity}%</span> • Оптимум: 40–60%
+      </div>
     </Card>
   );
 };

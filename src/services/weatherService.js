@@ -12,6 +12,53 @@ const getApiKey = () => localStorage.getItem('owm_api_key');
 const setApiKey = (key) => localStorage.setItem('owm_api_key', key);
 const hasApiKey = () => !!getApiKey();
 
+const ONE_CALL_EXCLUDE = 'minutely';
+
+const normalizeAlertSeverity = ({ event = '', tags = [] }) => {
+  const source = `${event} ${tags.join(' ')}`.toLowerCase();
+
+  if (/extreme|чрезвычай|ураган|tornado|hurricane|storm warning/.test(source)) {
+    return 'extreme';
+  }
+
+  if (/severe|шторм|гроза|буря|storm|thunder/.test(source)) {
+    return 'severe';
+  }
+
+  if (/advisory|watch|heat|cold|uv|rain|snow|wind|fog|мороз|жар|ветер|ливень|снег|туман/.test(source)) {
+    return 'moderate';
+  }
+
+  return 'minor';
+};
+
+const parseApiAlerts = (alerts = []) => {
+  if (!Array.isArray(alerts) || alerts.length === 0) {
+    return [];
+  }
+
+  return alerts.map((alert, index) => {
+    const event = alert.event || alert.headline || 'Погодное предупреждение';
+    const start = alert.start ? new Date(alert.start * 1000) : null;
+    const end = alert.end ? new Date(alert.end * 1000) : null;
+
+    return {
+      id: `api-${alert.event || 'alert'}-${alert.start || index}`,
+      event,
+      description: alert.description || alert.headline || 'Официальное предупреждение от метеослужбы',
+      severity: normalizeAlertSeverity({ event, tags: alert.tags || [] }),
+      source: alert.sender_name || 'OpenWeatherMap',
+      startsAt: start?.toISOString() || null,
+      endsAt: end?.toISOString() || null,
+      expires: end
+        ? end.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+        : 'До обновления',
+      tags: alert.tags || [],
+      official: true,
+    };
+  });
+};
+
 // Получение координат через геолокацию
 const getCurrentPosition = () => {
   return new Promise((resolve, reject) => {
@@ -182,9 +229,9 @@ const generateAgricultureData = (temp, humidity, rain) => {
 };
 
 // Парсинг ответа OpenWeatherMap
-const parseCurrentWeather = (data) => {
+const parseCurrentWeather = (data, uvIndexOverride = null) => {
   const condition = mapWeatherCondition(data.weather[0].id, data.weather[0].icon);
-  
+
   return {
     temperature: Math.round(data.main.temp * 10) / 10,
     feelsLike: Math.round(data.main.feels_like * 10) / 10,
@@ -195,7 +242,7 @@ const parseCurrentWeather = (data) => {
     windDirection: data.wind.deg || 0,
     windDirectionLabel: getWindDirectionLabel(data.wind.deg || 0),
     visibility: data.visibility ? Math.round(data.visibility / 1000) : 10,
-    uvIndex: data.uvi || 0,
+    uvIndex: uvIndexOverride ?? data.uvi ?? 0,
     cloudCover: data.clouds?.all || 0,
     condition,
     dewPoint: Math.round((data.main.temp - (100 - data.main.humidity) / 5) * 10) / 10,
@@ -281,6 +328,62 @@ const parseDailyForecast = (list) => {
   }));
 };
 
+const parseOneCallHourly = (hourly = []) => {
+  return hourly.slice(0, 48).map((item) => {
+    const date = new Date(item.dt * 1000);
+    const weather = item.weather?.[0] || {};
+
+    return {
+      time: date.toISOString(),
+      hour: `${date.getHours()}:00`,
+      temperature: Math.round((item.temp ?? 0) * 10) / 10,
+      feelsLike: Math.round((item.feels_like ?? item.temp ?? 0) * 10) / 10,
+      humidity: item.humidity ?? 0,
+      precipitation: Math.round((((item.rain?.['1h'] ?? 0) + (item.snow?.['1h'] ?? 0)) * 10)) / 10,
+      precipitationProbability: Math.round((item.pop || 0) * 100),
+      windSpeed: Math.round((item.wind_speed ?? 0) * 10) / 10,
+      windGust: item.wind_gust ? Math.round(item.wind_gust * 10) / 10 : Math.round((item.wind_speed ?? 0) * 13) / 10,
+      windDirection: item.wind_deg || 0,
+      pressure: item.pressure ?? 0,
+      visibility: item.visibility ? Math.round(item.visibility / 1000) : 10,
+      uvIndex: Math.round(item.uvi ?? 0),
+      cloudCover: item.clouds ?? 0,
+      condition: mapWeatherCondition(weather.id || 804, weather.icon || '04d'),
+    };
+  });
+};
+
+const parseOneCallDaily = (daily = []) => {
+  const weekDays = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+
+  return daily.slice(0, 7).map((item) => {
+    const date = new Date(item.dt * 1000);
+    const weather = item.weather?.[0] || {};
+
+    return {
+      date: date.toISOString(),
+      dayName: weekDays[date.getDay()],
+      dayNumber: date.getDate(),
+      month: date.toLocaleDateString('ru-RU', { month: 'short' }),
+      tempMax: Math.round((item.temp?.max ?? 0) * 10) / 10,
+      tempMin: Math.round((item.temp?.min ?? 0) * 10) / 10,
+      humidity: Math.round(item.humidity ?? 0),
+      precipitation: Math.round(((item.rain ?? 0) + (item.snow ?? 0)) * 10) / 10,
+      precipitationProbability: Math.round((item.pop || 0) * 100),
+      windSpeed: Math.round((item.wind_speed ?? 0) * 10) / 10,
+      windDirection: Math.round(item.wind_deg ?? 0),
+      condition: mapWeatherCondition(weather.id || 804, weather.icon || '04d'),
+      uvIndex: Math.round(item.uvi ?? 0),
+      sunrise: item.sunrise
+        ? new Date(item.sunrise * 1000).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+        : '--:--',
+      sunset: item.sunset
+        ? new Date(item.sunset * 1000).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+        : '--:--',
+    };
+  });
+};
+
 const parseAirQuality = (data) => {
   const aqi = data.list[0].main.aqi;
   const components = data.list[0].components;
@@ -335,13 +438,12 @@ export const weatherService = {
   // Получить все данные о погоде
   async getWeatherData(coords = null) {
     const apiKey = getApiKey();
-    
-    // Если нет API ключа, используем mock данные
     if (!apiKey) {
       await new Promise(resolve => setTimeout(resolve, 500));
       const mock = refreshMockData();
       return {
         ...mock,
+        alerts: [],
         astronomy: calculateAstronomy(mock.location.coordinates.lat, mock.location.coordinates.lon),
         pollen: generatePollenData(),
         agriculture: generateAgricultureData(
@@ -351,7 +453,7 @@ export const weatherService = {
         ),
       };
     }
-    
+
     try {
       // Получаем координаты
       let { lat, lon } = coords || {};
@@ -366,34 +468,60 @@ export const weatherService = {
           lon = 37.6173;
         }
       }
-      
-      // Параллельные запросы к API
-      const [currentRes, forecastRes, airRes] = await Promise.all([
-        fetch(`${API_BASE}/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=ru`),
-        fetch(`${API_BASE}/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=ru`),
-        fetch(`${API_BASE}/air_pollution?lat=${lat}&lon=${lon}&appid=${apiKey}`),
-        fetch(`${API_BASE}/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=ru`),
+
+      const currentUrl = `${API_BASE}/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=ru`;
+      const airUrl = `${API_BASE}/air_pollution?lat=${lat}&lon=${lon}&appid=${apiKey}`;
+      const oneCallUrl = `${API_BASE_3}/onecall?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=ru&exclude=${ONE_CALL_EXCLUDE}`;
+      const forecastUrl = `${API_BASE}/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=ru`;
+
+      const [currentRes, airRes, oneCallRes] = await Promise.all([
+        fetch(currentUrl),
+        fetch(airUrl),
+        fetch(oneCallUrl),
       ]);
-      
       if (!currentRes.ok) {
-        throw new Error('Ошибка API: ' + currentRes.status);
+        throw new Error(`Ошибка API текущей погоды: ${currentRes.status}`);
       }
-      
-      const [currentData, forecastData, airData] = await Promise.all([
+
+      if (!airRes.ok) {
+        throw new Error(`Ошибка API качества воздуха: ${airRes.status}`);
+      }
+
+      const [currentData, airData, oneCallData] = await Promise.all([
         currentRes.json(),
-        forecastRes.json(),
         airRes.json(),
+        oneCallRes.ok ? oneCallRes.json() : Promise.resolve(null),
       ]);
-      
-      const current = parseCurrentWeather(currentData, lat, lon);
-      const hourly = parseHourlyForecast(forecastData.list);
-      const daily = parseDailyForecast(forecastData.list);
+
+      let hourly = [];
+      let daily = [];
+      let alerts = [];
+      let uvOverride = null;
+
+      if (oneCallData) {
+        hourly = parseOneCallHourly(oneCallData.hourly);
+        daily = parseOneCallDaily(oneCallData.daily);
+        alerts = parseApiAlerts(oneCallData.alerts);
+        uvOverride = Math.round(oneCallData.current?.uvi ?? 0);
+      }
+
+      if (hourly.length === 0 || daily.length === 0) {
+        const forecastRes = await fetch(forecastUrl);
+        if (!forecastRes.ok) {
+          throw new Error(`Ошибка API прогноза: ${forecastRes.status}`);
+        }
+
+        const forecastData = await forecastRes.json();
+        hourly = parseHourlyForecast(forecastData.list);
+        daily = parseDailyForecast(forecastData.list);
+      }
+
+      const current = parseCurrentWeather(currentData, uvOverride);
       const airQuality = parseAirQuality(airData);
       const windRose = generateWindRoseData(hourly);
       const astronomy = calculateAstronomy(lat, lon);
       const pollen = generatePollenData();
       const agriculture = generateAgricultureData(current.temperature, current.humidity, hourly[0]?.precipitation || 0);
-      
       return {
         location: {
           city: currentData.name,
@@ -404,6 +532,7 @@ export const weatherService = {
         current,
         hourly,
         daily,
+        alerts,
         airQuality,
         windRose,
         astronomy,

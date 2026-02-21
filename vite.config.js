@@ -32,13 +32,6 @@ export default defineConfig(({ mode }) => {
               return 'react-vendor';
             }
 
-            if (normalizedId.includes('/recharts/')) {
-              return 'charts-vendor';
-            }
-
-            if (normalizedId.includes('/three/examples/')) {
-              return 'three-examples-vendor';
-            }
 
             if (normalizedId.includes('/three/')) {
               return 'three-core-vendor';
